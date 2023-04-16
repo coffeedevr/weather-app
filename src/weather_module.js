@@ -16,9 +16,15 @@ const WeatherModule = (() => {
   }
 
   async function retrieveCurrent (place) {
+    try {
     const response = await fetch(currentWeather + place)
+    if (!response.ok) throw new Error('Request Failed')
     const data = await response.json()
     return data
+    } catch (err){
+      alert('Invalid location')
+      return 'err'
+    }
   }
 
   return { retrieveForecast, retrieveCurrent, search }

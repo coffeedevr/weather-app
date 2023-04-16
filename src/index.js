@@ -9,10 +9,12 @@ import { formatInTimeZone } from 'date-fns-tz'
 const head = document.getElementsByTagName('head')
 head[0].innerHTML += '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Alkatra&family=Didact+Gothic&family=Tilt+Neon&family=Yatra+One&display=swap" rel="stylesheet">'
 
+let location = 'Manila, Philippines'
+let tempLoc = ''
+
 const APIModule = (() => {
   // await search results
-  async function showResults (event) {
-    const input = event.target.value
+  async function showResults (input) {
     const results = await WeatherModule.search(input)
     generateDropdown(results.length, results)
   }
@@ -41,10 +43,8 @@ const APIModule = (() => {
     return results
   }
 
-  async function getCurrent () {
-    const input = document.querySelector('#places').value
+  async function getCurrent (input) {
     const results = await WeatherModule.retrieveCurrent(input)
-
     return results
   }
 
@@ -78,8 +78,11 @@ search.setAttribute('type', 'search')
 search.setAttribute('list', 'place')
 search.setAttribute('placeholder', 'Search city...')
 searchWrapper.appendChild(search)
-search.addEventListener('input', APIModule.showResults)
-search.addEventListener('search', displayResults)
+search.addEventListener('input', ((event) => {
+  event.stopImmediatePropagation()
+  const input = event.target.value
+  APIModule.showResults(input)}))
+search.addEventListener('enter', displayResults)
 
 const searchIcon = document.createElement('button')
 searchIcon.setAttribute('type', 'button')
@@ -97,11 +100,18 @@ DOMInterface.insertToByClass('footer-container', DOMInterface.createImgById('git
 
 // display result
 async function displayResults () {
-  const search = document.querySelector('#places').value
-  const current = await APIModule.getCurrent(search)
-  const forecast = await APIModule.getForecast(search)
-  DOMInterface.insertTextContentById('result-name', current.location.name + ', ' + current.location.region + '<br>' + current.location.country)
+  tempLoc = document.querySelector('#places').value
+  const search = await APIModule.getCurrent(tempLoc)
+  let current, forecast = ''
+  if (search === 'err') {
+    document.querySelector('#places').value = location
+  } else {
+    location = tempLoc
+    current = await APIModule.getCurrent(location)
+    forecast = await APIModule.getForecast(location)
+  }
 
+  DOMInterface.insertTextContentById('result-name', current.location.name + ', ' + current.location.region + '<br>' + current.location.country)
   document.querySelector('#weather-logo').src = current.current.condition.icon
 
   // left container
@@ -114,7 +124,7 @@ async function displayResults () {
   DOMInterface.insertTextContentById('current-humi-text', current.current.humidity + '% Humidity')
   DOMInterface.insertTextContentById('current-wind-text', 'Wind: ' + current.current.wind_degree + '° ' + current.current.wind_dir + '<br>' + current.current.wind_kph + ' kph | ' + current.current.wind_mph + ' mph')
 
-  // forecast 9:00
+  // forecast
   for (let i = 9; i <= 18; i += 3) {
     DOMInterface.insertTextContentById('forecast-time-' + i, i + ':00')
     document.querySelector('#forecast-weather-logo-' + i).src = forecast.forecast.forecastday[0].hour[i].condition.icon
@@ -123,31 +133,6 @@ async function displayResults () {
     DOMInterface.insertTextContentById('forecast-humi-' + i, forecast.forecast.forecastday[0].hour[i].humidity + '% Humidity')
     DOMInterface.insertTextContentById('forecast-wind-' + i, 'Wind: ' + forecast.forecast.forecastday[0].hour[i].wind_degree + '° ' + forecast.forecast.forecastday[0].hour[i].wind_dir + '<br>' + forecast.forecast.forecastday[0].hour[i].wind_kph + ' kph | ' + forecast.forecast.forecastday[0].hour[i].wind_mph + ' mph')
   }
-
-  // // forecast 12:00
-  // DOMInterface.insertTextContentById('forecast-time-two', '12:00 PM')
-  // document.querySelector('#forecast-weather-logo-two').src = forecast.forecast.forecastday[0].hour[12].condition.icon
-  // DOMInterface.insertTextContentById('forecast-temp-two', forecast.forecast.forecastday[0].hour[12].temp_c + '° C | ' + forecast.forecast.forecastday[0].hour[12].temp_f + '° F')
-  // DOMInterface.insertTextContentById('forecast-preci-two', forecast.forecast.forecastday[0].hour[12].precip_mm + ' mm | ' + forecast.forecast.forecastday[0].hour[12].precip_in + ' in')
-  // DOMInterface.insertTextContentById('forecast-humi-two', forecast.forecast.forecastday[0].hour[12].humidity + '% Humidity')
-  // DOMInterface.insertTextContentById('forecast-wind-two', 'Wind: ' + forecast.forecast.forecastday[0].hour[12].wind_degree + '° ' + forecast.forecast.forecastday[0].hour[12].wind_dir + '<br>' + forecast.forecast.forecastday[0].hour[12].wind_kph + ' kph / ' + forecast.forecast.forecastday[0].hour[12].wind_mph + ' mph')
-
-  //   // forecast 3:00
-
-  //   DOMInterface.insertTextContentById('forecast-time-one', '3:00 PM')
-  //   document.querySelector('#forecast-weather-logo-one').src = forecast.forecast.forecastday[0].hour[9].condition.icon
-  //   DOMInterface.insertTextContentById('forecast-temp-one', forecast.forecast.forecastday[0].hour[9].temp_c + '° C | ' + forecast.forecast.forecastday[0].hour[9].temp_f + '° F')
-  //   DOMInterface.insertTextContentById('forecast-preci-one', forecast.forecast.forecastday[0].hour[9].precip_mm + ' mm | ' + forecast.forecast.forecastday[0].hour[9].precip_in + ' in')
-  //   DOMInterface.insertTextContentById('forecast-humi-one', forecast.forecast.forecastday[0].hour[9].humidity + '% Humidity')
-  //   DOMInterface.insertTextContentById('forecast-wind-one', 'Wind: ' + forecast.forecast.forecastday[0].hour[9].wind_degree + '° ' + forecast.forecast.forecastday[0].hour[9].wind_dir + '<br>' + forecast.forecast.forecastday[0].hour[9].wind_kph + ' kph / ' + forecast.forecast.forecastday[0].hour[9].wind_mph + ' mph')
-
-  //   // forecast 6:00
-  //   DOMInterface.insertTextContentById('forecast-time-two', '6:00 PM')
-  //   document.querySelector('#forecast-weather-logo-two').src = forecast.forecast.forecastday[0].hour[12].condition.icon
-  //   DOMInterface.insertTextContentById('forecast-temp-two', forecast.forecast.forecastday[0].hour[12].temp_c + '° C | ' + forecast.forecast.forecastday[0].hour[12].temp_f + '° F')
-  //   DOMInterface.insertTextContentById('forecast-preci-two', forecast.forecast.forecastday[0].hour[12].precip_mm + ' mm | ' + forecast.forecast.forecastday[0].hour[12].precip_in + ' in')
-  //   DOMInterface.insertTextContentById('forecast-humi-two', forecast.forecast.forecastday[0].hour[12].humidity + '% Humidity')
-  //   DOMInterface.insertTextContentById('forecast-wind-two', 'Wind: ' + forecast.forecast.forecastday[0].hour[12].wind_degree + '° ' + forecast.forecast.forecastday[0].hour[12].wind_dir + '<br>' + forecast.forecast.forecastday[0].hour[12].wind_kph + ' kph / ' + forecast.forecast.forecastday[0].hour[12].wind_mph + ' mph')
 }
 
 function buildDOM () {
@@ -181,7 +166,7 @@ function buildDOM () {
   DOMInterface.insertToByClass('current-weather-right-container', DOMInterface.createElement('h1', '', 'current-humi-text'))
   DOMInterface.insertToByClass('current-weather-right-container', DOMInterface.createElement('p', '', 'current-wind-text'))
 
-  // forecast 9:00
+  // forecast
   for (let i = 9; i <= 18; i += 3) {
     const a = () => i >= 15 ? 2 : 1
     DOMInterface.insertToByClass('forecast-weather-wrapper-' + a(), DOMInterface.createElement('div', 'forecast-weather-container', 'forecast-weather-container-' + i))
@@ -195,47 +180,10 @@ function buildDOM () {
     DOMInterface.insertToById('forecast-weather-container-' + i, DOMInterface.createElement('p', '', 'forecast-humi-' + i))
     DOMInterface.insertToById('forecast-weather-container-' + i, DOMInterface.createElement('p', '', 'forecast-wind-' + i))
   }
-
-  // // forecast 12:00
-  // DOMInterface.insertToByClass('forecast-weather-wrapper-one', DOMInterface.createElement('div', 'forecast-weather-container', 'forecast-weather-two-container'))
-  // DOMInterface.insertToById('forecast-weather-two-container', DOMInterface.createElement('div', 'forecast-header', 'forecast-weather-two-header'))
-  // DOMInterface.insertToById('forecast-weather-two-header', DOMInterface.createElement('img', 'icon', 'forecast-weather-logo-two'))
-  // DOMInterface.insertToById('forecast-weather-two-header', DOMInterface.createElement('p', 'forecast-time', 'forecast-time-two'))
-  // DOMInterface.insertToById('forecast-weather-two-container', DOMInterface.createElement('p', '', 'forecast-temp-two'))
-  // DOMInterface.insertToById('forecast-weather-two-container', DOMInterface.createElement('img', 'icon', 'forecast-preci-logo-two'))
-  // DOMInterface.insertToById('forecast-weather-two-container', DOMInterface.createElement('p', '', 'forecast-preci-two'))
-  // document.querySelector('#forecast-preci-logo-two').src = Rain
-  // DOMInterface.insertToById('forecast-weather-two-container', DOMInterface.createElement('p', '', 'forecast-humi-two'))
-  // DOMInterface.insertToById('forecast-weather-two-container', DOMInterface.createElement('p', '', 'forecast-wind-two'))
-
-  //   // forecast 3:00
-  //   DOMInterface.insertToByClass('forecast-weather-wrapper-two', DOMInterface.createElement('div', 'forecast-weather-container', 'forecast-weather-three-container'))
-  //   DOMInterface.insertToById('forecast-weather-three-container', DOMInterface.createElement('div', 'forecast-header', 'forecast-weather-three-header'))
-  //   DOMInterface.insertToById('forecast-weather-three-header', DOMInterface.createElement('img', 'icon', 'forecast-weather-logo-three'))
-  //   DOMInterface.insertToById('forecast-weather-three-header', DOMInterface.createElement('p', 'forecast-time', 'forecast-time-three'))
-  //   DOMInterface.insertToById('forecast-weather-three-container', DOMInterface.createElement('p', '', 'forecast-temp-three'))
-  //   DOMInterface.insertToById('forecast-weather-three-container', DOMInterface.createElement('img', 'icon', 'forecast-preci-logo-three'))
-  //   DOMInterface.insertToById('forecast-weather-three-container', DOMInterface.createElement('p', '', 'forecast-preci-three'))
-  //   document.querySelector('#forecast-preci-logo-three').src = Rain
-  //   DOMInterface.insertToById('forecast-weather-three-container', DOMInterface.createElement('p', '', 'forecast-humi-threee'))
-  //   DOMInterface.insertToById('forecast-weather-three-container', DOMInterface.createElement('p', '', 'forecast-wind-three'))
-
-  //   // forecast 6:00
-  //   DOMInterface.insertToByClass('forecast-weather-wrapper-two', DOMInterface.createElement('div', 'forecast-weather-container', 'forecast-weather-four-container'))
-  //   DOMInterface.insertToById('forecast-weather-four-container', DOMInterface.createElement('div', 'forecast-header', 'forecast-weather-four-header'))
-  //   DOMInterface.insertToById('forecast-weather-four-header', DOMInterface.createElement('img', 'icon', 'forecast-weather-logo-four'))
-  //   DOMInterface.insertToById('forecast-weather-four-header', DOMInterface.createElement('p', 'forecast-time', 'forecast-time-four'))
-  //   DOMInterface.insertToById('forecast-weather-four-container', DOMInterface.createElement('p', '', 'forecast-temp-four'))
-  //   DOMInterface.insertToById('forecast-weather-four-container', DOMInterface.createElement('img', 'icon', 'forecast-preci-logo-four'))
-  //   DOMInterface.insertToById('forecast-weather-four-container', DOMInterface.createElement('p', '', 'forecast-preci-four'))
-  //   document.querySelector('#forecast-preci-logo-four').src = Rain
-  //   DOMInterface.insertToById('forecast-weather-four-container', DOMInterface.createElement('p', '', 'forecast-humi-four'))
-  //   DOMInterface.insertToById('forecast-weather-four-container', DOMInterface.createElement('p', '', 'forecast-wind-four'))
 }
 
 async function updateTime () {
-  const search = document.querySelector('#places').value
-  const current = await APIModule.getCurrent(search)
+  const current = await APIModule.getCurrent(location)
   const date = formatInTimeZone(new Date(), current.location.tz_id, 'EEEE MMMM d, yyyy')
   const time = formatInTimeZone(new Date(), current.location.tz_id, 'HH:mm:ss zzz')
   document.querySelector('#date-display').innerHTML = date
@@ -244,5 +192,5 @@ async function updateTime () {
 
 buildDOM()
 setInterval(updateTime, 1000)
-search.value = 'Manila, Philippines'
+search.value = location
 displayResults()
